@@ -1,123 +1,83 @@
-# Malware Memory Analysis (Volatility) – 2024
+# Memory Analysis and YARA Detection (2024)
 
-This project analyzes a memory dump to extract process information, check for network activity, and detect suspicious behavior using **Volatility 3** and **YARA rules**.
+Dette prosjektet viser hvordan minneanalyse kan brukes for å identifisere en mistenkelig prosess, inspisere nettverksaktivitet og opprette en tilpasset YARA-regel for deteksjon.  
+Prosjektet kombinerer bruk av **Volatility 3**, kommandoanalyse og praktiske funn fra minnedumpen.
 
 ---
 
 ## Table of Contents
-
-- [Overview](#overview)
-- [Objectives](#objectives)
-- [Tools and Setup](#tools-and-setup)
-- [Process Analysis (pslist)](#process-analysis-pslist)
-- [Network Analysis (netscan)](#network-analysis-netscan)
-- [YARA Rule Creation & Scan](#yara-rule-creation--scan)
-- [Key Findings](#key-findings)
-- [Reflection](#reflection)
+- [Prosesslisteanalyse](#prosesslisteanalyse)
+- [Nettverksanalyse](#nettverksanalyse)
+- [YARA-regel og skanning](#yara-regel-og-skanning)
+- [Konklusjon](#konklusjon)
 
 ---
 
-## Overview
+## Prosesslisteanalyse
 
-In this lab, a memory dump (`mem.raw`) was analyzed using **Volatility 3**.  
-The goal was to identify the process tree for `wzdu35.exe`, check for network connections, and detect the process in memory using a custom YARA rule.
-
----
-
-## Objectives
-
-- Extract process and parent process IDs (PID & PPID)
-- Check for active network connections in the dump
-- Write a custom **YARA rule** to detect the process in memory
-- Verify YARA hits on the correct PID without false positives
-
----
-
-## Tools and Setup
-
-- **Volatility 3 Framework** – memory forensics
-- **Python 3** – running Volatility plugins
-- **Nano** – for creating the YARA rule file
-
----
-
-## Process Analysis (pslist)
-
-Command used:
-
+**Kommando brukt:**
 ```bash
 python3 vol.py -f mem.raw windows.pslist
 ```
 
-**Result:**  
-The process `wzdu35.exe` was found with **PID 2312** and **PPID 288**.
+**Resultat:**  
+Prosessen `wzdu35.exe` ble funnet med **PID 2312** og **PPID 288**.
 
-![Process List Screenshot](./screenshots/volatility_pslist.png)
+![Process List Screenshot](screenshots/process_list_wzdu35.png)
 
 ---
 
-## Network Analysis (netscan)
+## Nettverksanalyse
 
-Command used:
-
+**Kommando brukt:**
 ```bash
 python3 vol.py -f mem.raw windows.netscan
 ```
 
-**Result:**  
-No active network connections were found in the memory dump at the time of capture.
+**Resultat:**  
+Ingen åpne nettverksforbindelser ble funnet i minnedumpen på tidspunktet for analysen.
 
-![Network Scan Screenshot](./screenshots/volatility_netscan.png)
+![Network Scan Screenshot](screenshots/network_scan_empty.png)
 
 ---
 
-## YARA Rule Creation & Scan
+## YARA-regel og skanning
 
-A custom YARA rule was created with **nano**:
+**Opprettelse av YARA-regel:**  
+En tilpasset YARA-regel ble laget ved hjelp av `nano`:
 
 ```yara
 rule analyse_wzdu35 {
-  strings:
-    $string1 = "wzdu35.exe"
-  condition:
-    $string1
+    strings:
+        $string1 = "wzdu35.exe"
+    condition:
+        $string1
 }
 ```
 
-Saved as `analyse_wzdu35.yar`.
+![YARA File Creation Screenshot](screenshots/yara_rule_creation.png)
 
-Then, Volatility’s `yarascan` plugin was used to scan the memory:
-
+**Skanning av minne med YARA-regelen:**
 ```bash
 python3 vol.py -f mem.raw windows.vadyarascan.VadYaraScan --yara-file analyse_wzdu35.yar
 ```
 
-**Result:**  
-Multiple matches were found in **PID 2312** and one match in **PID 288**.
+**Resultat:**  
+Det ble funnet flere treff i prosessen med **PID 2312** og ett treff i prosessen med **PPID 288**.  
+Dette bekrefter at prosessen inneholder strengen definert i YARA-regelen.
 
-![YARA Scan Screenshot](./screenshots/volatility_yarascan.png)
-
----
-
-## Key Findings
-
-- `wzdu35.exe` was active in memory with PID 2312 and PPID 288.
-- No network connections were established at the time of memory capture.
-- The custom YARA rule successfully identified the process in memory.
-- The detection was accurate and produced no false positives.
+![YARA Scan Results Screenshot](screenshots/yara_scan_results.png)
 
 ---
 
-## Reflection
+## Konklusjon
 
-This exercise deepened my understanding of **memory forensics** and **process analysis**.  
-By using Volatility and YARA together, I learned how to identify malicious processes in a memory dump and confirm their presence with a signature based approach.  
-The fact that no network connections were found suggests that the process might have been dormant or not communicating externally at the time of capture.  
-This highlights the importance of correlating memory analysis with network data to get a full picture of system activity.
+Denne øvelsen ga verdifull praktisk erfaring i å kombinere minneanalyse og signaturbasert deteksjon.  
+Ved å bruke prosessliste og nettverksskanning i Volatility ble det tydelig hvordan man kan identifisere mistenkelig aktivitet selv når det ikke finnes aktive forbindelser.  
+Opprettelsen av en spesifikk YARA-regel viste hvordan det er mulig å finne nøyaktige treff i minnedata, og hvor viktig det er å lage regler som er presise for å unngå falske positive resultater.  
+Denne prosessen styrket forståelsen av minneanalyse, YARA-regler og sammenhengen mellom prosessinformasjon og deteksjonsresultater.
 
 ---
 
-## Author
+© 2024 Mahamed-Maki Saine
 
-**Mahamed-Maki Saine**  
-Cybersecurity Student | Malware Analysis & Forensics Enthusiast
