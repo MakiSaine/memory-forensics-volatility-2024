@@ -1,88 +1,97 @@
-# Memory Analysis with Volatility and YARA (2024)
+# Memory Analysis with Volatility & YARA (2024)
 
-This lab documents how I used **Volatility 3** to analyze a memory dump, identify a suspicious process, check for network activity, and confirm indicators using a custom **YARA** rule.
+This project demonstrates memory forensics techniques using **Volatility 3** and **YARA**.  
+The goal is to identify processes, check for network activity, and create a custom YARA rule to detect malicious code patterns.
 
 ---
 
 ## Table of Contents
-- [Process List (pslist)](#process-list-pslist)
-- [Network Scan (netscan)](#network-scan-netscan)
-- [YARA Rule Creation](#yara-rule-creation)
-- [YARA Scan and Results](#yara-scan-and-results)
-- [Findings](#findings)
+1. [Process List Analysis](#process-list-analysis)
+2. [Network Analysis](#network-analysis)
+3. [YARA Rule Creation](#yara-rule-creation)
+4. [YARA Scan Results](#yara-scan-results)
+5. [Findings and Conclusion](#findings-and-conclusion)
 
 ---
 
-## Process List (pslist)
+## Process List Analysis
 
-**Command used**
+**Command used:**
 ```bash
 python3 vol.py -f mem.raw windows.pslist
 ```
 
-**Result**  
-The process `wzdu35.exe` was observed with **PID 2312** and **PPID 288**.
+**Result:**  
+The malicious process `wzdu35.exe` was identified with **PID 2312** and **PPID 288**.  
+This confirms the process was running in memory at the time of capture.
 
-![Volatility pslist](screenshots/volatility_pslist_wzdu35.png)
+![Process List Screenshot](screenshots/volatility_pslist_wzdu35.png)
 
 ---
 
-## Network Scan (netscan)
+## Network Analysis
 
-**Command used**
+**Command used:**
 ```bash
 python3 vol.py -f mem.raw windows.netscan
 ```
 
-**Result**  
-No active network connections were found at the time of capture.
+**Result:**  
+No active network connections were detected in the memory dump.  
+This suggests the malware was not communicating externally during capture.
 
-![Volatility netscan](screenshots/volatility_netscan_empty.png)
+![Network Scan Screenshot](screenshots/volatility_netscan_empty.png)
 
 ---
 
 ## YARA Rule Creation
 
-A simple YARA rule was authored to search for a clear indicator inside memory.
+A custom YARA rule was created to match the presence of `wzdu35.exe` strings in memory.
 
-**Rule content (created with `nano`)**
+**Rule content:**
 ```yara
 rule analyse_wzdu35 {
     strings:
-        $s1 = "wzdu35.exe"
+        $string1 = "wzdu35.exe"
     condition:
-        $s1
+        $string1
 }
 ```
 
-![YARA file content](screenshots/yarafile_content.png)
+![YARA Rule Content Screenshot](screenshots/yarafile_content.png)
 
 ---
 
-## YARA Scan and Results
+## YARA Scan Results
 
-**Command used**
+**Command used:**
 ```bash
 python3 vol.py -f mem.raw windows.vadyarascan.VadYaraScan --yara-file analyse_wzdu35.yar
 ```
 
-![YARA scan command](screenshots/volatility_yarascan_command.png)
+**Result:**  
+Multiple matches were found in memory, including the main process **PID 2312** and its parent process **PID 288**.  
+This confirms that the YARA rule successfully detects the malicious process.
 
-**Result**  
-Multiple hits were observed in PID **2312** and a hit associated with the parent PID **288**, confirming the indicator was present in memory.
+![YARA Scan Command Screenshot](screenshots/volatility_yarascan_command.png)
 
-![YARA scan results](screenshots/yarascan_results.png)
-
----
-
-## Findings
-
-- The suspicious process `wzdu35.exe` was present in memory with PID 2312 (parent 288).
-- No network sockets were active at capture time.
-- A targeted YARA rule successfully matched the expected indicator in memory.
-- This workflow shows how process enumeration, network inspection and YARA scanning complement each other in memory forensics.
+![YARA Scan Results Screenshot](screenshots/yarascan_results.png)
 
 ---
 
-© 2024 Mahamed-Maki Saine
+## Findings and Conclusion
+
+This exercise reinforced the value of memory analysis in incident response.  
+By using **pslist**, we confirmed the malicious process was running.  
+With **netscan**, we verified no active network connections existed at the time of capture, reducing immediate risk.  
+Finally, we created a **custom YARA rule** to reliably detect this process in memory, and validated that it produced no false positives.
+
+This workflow demonstrates a practical approach to:
+- Identifying suspicious processes  
+- Checking for network activity  
+- Writing precise detection rules  
+
+Such techniques are essential for malware analysts and incident responders working to contain and investigate threats effectively.
+
+---
 
