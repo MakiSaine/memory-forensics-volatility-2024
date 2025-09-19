@@ -1,83 +1,113 @@
-# Memory Analysis and YARA Detection (2024)
+# Malware Signature Analysis (2024)
 
-Dette prosjektet viser hvordan minneanalyse kan brukes for å identifisere en mistenkelig prosess, inspisere nettverksaktivitet og opprette en tilpasset YARA-regel for deteksjon.  
-Prosjektet kombinerer bruk av **Volatility 3**, kommandoanalyse og praktiske funn fra minnedumpen.
+This project demonstrates the process of creating and testing a custom ClamAV signature for a suspicious file (`wzdu35.exe`).  
+It includes calculating file properties, creating a signature file, scanning the file, and confirming that the signature does not generate false positives.
 
 ---
 
 ## Table of Contents
-- [Prosesslisteanalyse](#prosesslisteanalyse)
-- [Nettverksanalyse](#nettverksanalyse)
-- [YARA-regel og skanning](#yara-regel-og-skanning)
-- [Konklusjon](#konklusjon)
+
+- [Overview](#overview)
+- [File Size Check](#file-size-check)
+- [SHA256 Hash Calculation](#sha256-hash-calculation)
+- [Custom Signature Creation](#custom-signature-creation)
+- [ClamAV Detection](#clamav-detection)
+- [False Positive Test](#false-positive-test)
+- [Findings and Conclusion](#findings-and-conclusion)
 
 ---
 
-## Prosesslisteanalyse
+## Overview
 
-**Kommando brukt:**
+This lab focused on generating a custom `.hdb` signature to detect a suspicious file.  
+By using file size and SHA256 hash, we created a signature that uniquely matches `wzdu35.exe` and verified its accuracy with ClamAV.
+
+---
+
+## File Size Check
+
+Command used:
+
 ```bash
-python3 vol.py -f mem.raw windows.pslist
+stat -c%s wzdu35.exe
 ```
 
-**Resultat:**  
-Prosessen `wzdu35.exe` ble funnet med **PID 2312** og **PPID 288**.
+This step retrieves the exact file size, which is required for the `.hdb` signature format.
 
-![Process List Screenshot](screenshots/process_list_wzdu35.png)
+![File Size Screenshot](screenshots/stat_file_size_wzdu35.png)
 
 ---
 
-## Nettverksanalyse
+## SHA256 Hash Calculation
 
-**Kommando brukt:**
+Command used:
+
 ```bash
-python3 vol.py -f mem.raw windows.netscan
+sha256sum wzdu35.exe
 ```
 
-**Resultat:**  
-Ingen åpne nettverksforbindelser ble funnet i minnedumpen på tidspunktet for analysen.
+This generates the SHA256 hash that uniquely identifies the file.
 
-![Network Scan Screenshot](screenshots/network_scan_empty.png)
+![SHA256 Hash Screenshot](screenshots/sha256sum_wzdu35.png)
 
 ---
 
-## YARA-regel og skanning
+## Custom Signature Creation
 
-**Opprettelse av YARA-regel:**  
-En tilpasset YARA-regel ble laget ved hjelp av `nano`:
+The `.hdb` signature format requires the following syntax:
 
-```yara
-rule analyse_wzdu35 {
-    strings:
-        $string1 = "wzdu35.exe"
-    condition:
-        $string1
-}
+```
+SHA256:FILESIZE:NAME
 ```
 
-![YARA File Creation Screenshot](screenshots/yara_rule_creation.png)
+Example:
 
-**Skanning av minne med YARA-regelen:**
 ```bash
-python3 vol.py -f mem.raw windows.vadyarascan.VadYaraScan --yara-file analyse_wzdu35.yar
+echo "73176a97801a58e4148e407a2b6336ad8791fd8fc381bffaa3cee753ec394d0a:21613504:WZDU35" > hemmelig_fil.hdb
 ```
 
-**Resultat:**  
-Det ble funnet flere treff i prosessen med **PID 2312** og ett treff i prosessen med **PPID 288**.  
-Dette bekrefter at prosessen inneholder strengen definert i YARA-regelen.
-
-![YARA Scan Results Screenshot](screenshots/yara_scan_results.png)
+![Signature Creation Screenshot](screenshots/create_signature_file.png)
 
 ---
 
-## Konklusjon
+## ClamAV Detection
 
-Denne øvelsen ga verdifull praktisk erfaring i å kombinere minneanalyse og signaturbasert deteksjon.  
-Ved å bruke prosessliste og nettverksskanning i Volatility ble det tydelig hvordan man kan identifisere mistenkelig aktivitet selv når det ikke finnes aktive forbindelser.  
-Opprettelsen av en spesifikk YARA-regel viste hvordan det er mulig å finne nøyaktige treff i minnedata, og hvor viktig det er å lage regler som er presise for å unngå falske positive resultater.  
-Denne prosessen styrket forståelsen av minneanalyse, YARA-regler og sammenhengen mellom prosessinformasjon og deteksjonsresultater.
+Command used:
+
+```bash
+clamscan --database=./hemmelig_fil.hdb wzdu35.exe
+```
+
+Expected result: `FOUND`
+
+![ClamAV Detection Screenshot](screenshots/clamscan_wzdu35_result.png)
+
+---
+
+## False Positive Test
+
+To confirm that the signature does not match other files, a scan was performed on benign executables:
+
+```bash
+clamscan --database=./hemmelig_fil.hdb /path/to/other/files/*.exe
+```
+
+Expected result: `Infected files: 0`
+
+![False Positive Test Screenshot](screenshots/clamscan_false_positive_test.png)
+
+---
+
+## Findings and Conclusion
+
+- The custom signature successfully detected `wzdu35.exe`.
+- No false positives were observed when scanning other files.
+- Custom signatures are valuable for targeted detections when official databases do not yet flag the file.
+
+**Conclusion:**  
+This lab provided hands-on experience in signature creation and validation.  
+It reinforced the importance of precise signatures that accurately detect malicious files without impacting legitimate software.
 
 ---
 
 © 2024 Mahamed-Maki Saine
-
