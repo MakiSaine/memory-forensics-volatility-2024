@@ -6,15 +6,15 @@ The goal is to identify processes, check for network activity, and create a cust
 ---
 
 ## Table of Contents
- [Process List Analysis](#process-list-analysis)
+[Process List Analysis](#process-list-analysis)
  
- [Network Analysis](#network-analysis)
+[Network Analysis](#network-analysis)
  
- [YARA Rule Creation](#yara-rule-creation)
+[YARA Rule Creation](#yara-rule-creation)
  
- [YARA Scan Results](#yara-scan-results)
+[YARA Scan Results](#yara-scan-results)
  
- [Findings and Conclusion](#findings-and-conclusion)
+[Findings and Conclusion](#findings-and-conclusion)
 
 ---
 
